@@ -31,6 +31,7 @@ import {
     GetOrderPromotionsByCode,
     RemoveCouponCode,
     SetCustomerForOrder,
+    TestOrderFragment,
 } from './graphql/generated-e2e-shop-types';
 import { CREATE_PROMOTION, GET_FACET_LIST } from './graphql/shared-definitions';
 import {
@@ -407,8 +408,12 @@ describe('Promotions applied to Orders', () => {
                 productVariantId: getVariantBySlug('item-sale-1').id,
                 quantity: 2,
             });
+
+            function getItemSale1Line(lines: TestOrderFragment.Lines[]): TestOrderFragment.Lines {
+                return lines.find(l => l.productVariant.id === getVariantBySlug('item-sale-1').id)!;
+            }
             expect(addItemToOrder!.adjustments.length).toBe(0);
-            expect(addItemToOrder!.lines[2].adjustments.length).toBe(2); // 2x tax
+            expect(getItemSale1Line(addItemToOrder!.lines).adjustments.length).toBe(2); // 2x tax
             expect(addItemToOrder!.total).toBe(2640);
 
             const { applyCouponCode } = await shopClient.query<
@@ -419,7 +424,7 @@ describe('Promotions applied to Orders', () => {
             });
 
             expect(applyCouponCode!.total).toBe(1920);
-            expect(applyCouponCode!.lines[2].adjustments.length).toBe(4); // 2x tax, 2x promotion
+            expect(getItemSale1Line(applyCouponCode!.lines).adjustments.length).toBe(4); // 2x tax, 2x promotion
 
             const { removeCouponCode } = await shopClient.query<
                 RemoveCouponCode.Mutation,
@@ -428,11 +433,11 @@ describe('Promotions applied to Orders', () => {
                 couponCode,
             });
 
-            expect(removeCouponCode!.lines[2].adjustments.length).toBe(2); // 2x tax
+            expect(getItemSale1Line(removeCouponCode!.lines).adjustments.length).toBe(2); // 2x tax
             expect(removeCouponCode!.total).toBe(2640);
 
             const { activeOrder } = await shopClient.query<GetActiveOrder.Query>(GET_ACTIVE_ORDER);
-            expect(activeOrder!.lines[2].adjustments.length).toBe(2); // 2x tax
+            expect(getItemSale1Line(activeOrder!.lines).adjustments.length).toBe(2); // 2x tax
             expect(activeOrder!.total).toBe(2640);
 
             await deletePromotion(promotion.id);
