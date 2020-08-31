@@ -56,6 +56,7 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
       mysql:
         image: mysql:8
+        command: --default-authentication-plugin=mysql_native_password
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
         ports:
